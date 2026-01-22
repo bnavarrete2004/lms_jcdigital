@@ -19,8 +19,8 @@ from .models import (
 )
 
 # Configuración del sitio
-admin.site.site_header = "LMS JC Digital Training - Administración"
-admin.site.site_title = "LMS JC Digital"
+admin.site.site_header = "LMS J&C Digital Training - Administración"
+admin.site.site_title = "LMS J&C Digital"
 admin.site.index_title = "Panel de Administración"
 
 # Registros básicos
