@@ -9,6 +9,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api_lms.urls')),
+    path('api/auth/', include('api_lms.auth_urls')),
 ]
 
 # Admin customization
