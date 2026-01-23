@@ -1,5 +1,5 @@
 # urls.py
-# URLs para LMS JC Digital Training
+# URLs para LMS J&C Digital Training
 # Basado en models.py real del proyecto
 
 from django.urls import path, include
@@ -21,6 +21,9 @@ from .views import (
     MetricaHistoricaViewSet,
     AuditLogViewSet
 )
+
+# Importar views de upload
+from .views_upload import upload_material, upload_avatar, delete_avatar
 
 router = DefaultRouter()
 
@@ -82,4 +85,9 @@ router.register(r'audit-logs', AuditLogViewSet, basename='audit-log')
 
 urlpatterns = [
     path('', include(router.urls)),
+    
+    # Módulo 14: Upload de archivos
+    path('upload/material/', upload_material, name='upload-material'),
+    path('upload/avatar/', upload_avatar, name='upload-avatar'),
+    path('upload/avatar/', delete_avatar, name='delete-avatar'),  # DELETE method
 ]

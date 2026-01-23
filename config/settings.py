@@ -146,6 +146,64 @@ SENCE_API_URL = config('SENCE_API_URL', default='')
 SENCE_API_KEY = config('SENCE_API_KEY', default='')
 SENCE_CLAVE_UNICA_URL = config('SENCE_CLAVE_UNICA_URL', default='')
 
+# =============================================================================
+# CONFIGURACIÓN DE CLOUDINARY
+# =============================================================================
+# Agregar esto en tu settings.py después de SENCE_CLAVE_UNICA_URL
+
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    cloud_name=config('CLOUDINARY_CLOUD_NAME'),
+    api_key=config('CLOUDINARY_API_KEY'),
+    api_secret=config('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+
+# Validaciones de archivos para upload
+CLOUDINARY_SETTINGS = {
+    'materiales': {
+        'pdf': {
+            'max_size': 50 * 1024 * 1024,  # 50 MB
+            'extensions': ['.pdf'],
+            'folder': 'lms/materiales/pdf'
+        },
+        'video': {
+            'max_size': 500 * 1024 * 1024,  # 500 MB
+            'extensions': ['.mp4', '.avi', '.mov', '.wmv'],
+            'folder': 'lms/materiales/videos'
+        },
+        'documento': {
+            'max_size': 25 * 1024 * 1024,  # 25 MB
+            'extensions': ['.doc', '.docx', '.txt'],
+            'folder': 'lms/materiales/documentos'
+        },
+        'presentacion': {
+            'max_size': 50 * 1024 * 1024,  # 50 MB
+            'extensions': ['.ppt', '.pptx'],
+            'folder': 'lms/materiales/presentaciones'
+        },
+        'imagen': {
+            'max_size': 10 * 1024 * 1024,  # 10 MB
+            'extensions': ['.jpg', '.jpeg', '.png', '.gif'],
+            'folder': 'lms/materiales/imagenes'
+        },
+        'scorm': {
+            'max_size': 200 * 1024 * 1024,  # 200 MB
+            'extensions': ['.zip'],
+            'folder': 'lms/materiales/scorm'
+        },
+    },
+    'avatares': {
+        'max_size': 5 * 1024 * 1024,  # 5 MB
+        'extensions': ['.jpg', '.jpeg', '.png'],
+        'folder': 'lms/avatares'
+    }
+}
+
+
 # Logging
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
