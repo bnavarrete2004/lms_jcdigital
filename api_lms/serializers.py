@@ -472,3 +472,38 @@ class AuditLogSerializer(serializers.ModelSerializer):
     
     def get_usuario_nombre(self, obj):
         return obj.usuario.nombre_completo() if obj.usuario else 'Sistema'
+    
+# ==========================================
+# NOTIFICACIONES Y DIPLOMAS
+# ==========================================
+
+from api_lms.models import Notificacion, PlantillaDiploma
+
+class NotificacionSerializer(serializers.ModelSerializer):
+    """Serializer para notificaciones"""
+    
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    prioridad_display = serializers.CharField(source='get_prioridad_display', read_only=True)
+    
+    class Meta:
+        model = Notificacion
+        fields = [
+            'id', 'tipo', 'tipo_display', 'titulo', 'mensaje',
+            'url_accion', 'leida', 'fecha_leida', 'prioridad',
+            'prioridad_display', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'fecha_leida']
+
+
+class PlantillaDiplomaSerializer(serializers.ModelSerializer):
+    """Serializer para plantillas de diplomas"""
+    
+    class Meta:
+        model = PlantillaDiploma
+        fields = [
+            'id', 'nombre', 'descripcion', 'plantilla_html',
+            'variables_disponibles', 'firma_director_url',
+            'firma_relator_incluida', 'activa', 'predeterminada',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']

@@ -662,6 +662,7 @@ class Inscripcion(models.Model):
             models.Index(fields=['estudiante']),
             models.Index(fields=['estado']),
             models.Index(fields=['fecha_inscripcion']),
+            models.Index(fields=['diploma_codigo_validacion']),
         ]
         verbose_name = 'Inscripción'
         verbose_name_plural = 'Inscripciones'

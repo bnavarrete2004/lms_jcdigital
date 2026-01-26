@@ -4,6 +4,8 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .views_notificaciones import NotificacionViewSet
+from .views_diplomas import PlantillaDiplomaViewSet, DiplomaViewSet
 
 from .views import (
     UserViewSet, UsuarioViewSet, PerfilRelatorViewSet, ConfiguracionUsuarioViewSet,
@@ -26,6 +28,8 @@ from .views import (
 from .views_upload import upload_material, upload_avatar, delete_avatar
 
 router = DefaultRouter()
+
+
 
 # Módulo 1: Usuarios
 router.register(r'users', UserViewSet, basename='user')
@@ -76,6 +80,7 @@ router.register(r'respuestas-encuesta', RespuestaEncuestaViewSet, basename='resp
 
 # Módulo 11: Diplomas
 router.register(r'plantillas-diploma', PlantillaDiplomaViewSet, basename='plantilla-diploma')
+router.register(r'diplomas', DiplomaViewSet, basename='diploma')
 
 # Módulo 12: Métricas
 router.register(r'metricas-historicas', MetricaHistoricaViewSet, basename='metrica-historica')
@@ -90,4 +95,8 @@ urlpatterns = [
     path('upload/material/', upload_material, name='upload-material'),
     path('upload/avatar/', upload_avatar, name='upload-avatar'),
     path('upload/avatar/', delete_avatar, name='delete-avatar'),  # DELETE method
+    path('diplomas/validar/<str:codigo>/', 
+     DiplomaViewSet.as_view({'get': 'validar'}), 
+     name='validar-diploma'),
+
 ]
