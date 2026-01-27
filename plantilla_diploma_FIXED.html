@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Diploma de Certificación</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 297mm;
+            height: 210mm;
+            background: linear-gradient(135deg, #0B5563 0%, #088395 50%, #06B6D4 100%);
+            margin: 0;
+            padding: 15mm;
+            font-family: 'Georgia', serif;
+        }
+        
+        .diploma {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border: 8px solid #0B5563;
+            border-radius: 10px;
+            position: relative;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .inner-border {
+            border: 3px solid #06B6D4;
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+            padding: 25px;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .logo-text {
+            font-size: 22pt;
+            font-weight: bold;
+            color: #0B5563;
+            letter-spacing: 2px;
+        }
+        
+        .subtitulo {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Sello SENCE */
+        .sello {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border: 3px solid #0B5563;
+            border-radius: 50%;
+            background: white;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .sello-title {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #0B5563;
+            line-height: 1.2;
+        }
+        
+        .sello-code {
+            font-size: 9pt;
+            color: #06B6D4;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        /* Título */
+        .titulo {
+            text-align: center;
+            font-size: 56pt;
+            font-weight: bold;
+            color: #0B5563;
+            margin: 15px 0;
+            letter-spacing: 8px;
+        }
+        
+        /* Línea decorativa */
+        .linea-decorativa {
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #06B6D4, transparent);
+            margin: 15px auto;
+        }
+        
+        /* Textos */
+        .texto-certifica {
+            text-align: center;
+            font-size: 14pt;
+            color: #555;
+            margin: 15px 0;
+        }
+        
+        .nombre-estudiante {
+            text-align: center;
+            font-size: 32pt;
+            font-weight: bold;
+            color: #0B5563;
+            margin: 15px 0;
+            border-bottom: 3px solid #06B6D4;
+            padding-bottom: 10px;
+            max-width: 70%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .rut {
+            text-align: center;
+            font-size: 11pt;
+            color: #888;
+            margin: 8px 0;
+        }
+        
+        .nombre-curso {
+            text-align: center;
+            font-size: 22pt;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 40px;
+            line-height: 1.4;
+        }
+        
+        .detalles {
+            text-align: center;
+            font-size: 11pt;
+            color: #666;
+            line-height: 1.8;
+            margin: 15px 0;
+        }
+        
+        .detalles strong {
+            color: #0B5563;
+        }
+        
+        /* Firmas */
+        .firmas {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding: 0 60px;
+        }
+        
+        .firma {
+            text-align: center;
+            width: 200px;
+        }
+        
+        .firma-placeholder {
+            width: 150px;
+            height: 40px;
+            margin: 0 auto 10px;
+            background: linear-gradient(90deg, transparent, rgba(6,182,212,0.2), transparent);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20pt;
+            color: rgba(11,85,99,0.3);
+            font-style: italic;
+            transform: rotate(-3deg);
+        }
+        
+        .firma-linea {
+            width: 150px;
+            height: 2px;
+            background: #0B5563;
+            margin: 0 auto 8px;
+        }
+        
+        .firma-nombre {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #0B5563;
+            margin-bottom: 3px;
+        }
+        
+        .firma-cargo {
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9pt;
+            color: #888;
+        }
+        
+        .codigo {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #0B5563;
+        }
+        
+        /* Esquinas decorativas */
+        .esquina {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #06B6D4;
+        }
+        
+        .esquina-tl {
+            top: 15px;
+            left: 15px;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .esquina-tr {
+            top: 15px;
+            right: 15px;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .esquina-bl {
+            bottom: 15px;
+            left: 15px;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .esquina-br {
+            bottom: 15px;
+            right: 15px;
+            border-left: none;
+            border-top: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="diploma">
+        <div class="inner-border">
+            <!-- Esquinas -->
+            <div class="esquina esquina-tl"></div>
+            <div class="esquina esquina-tr"></div>
+            <div class="esquina esquina-bl"></div>
+            <div class="esquina esquina-br"></div>
+            
+            <!-- Sello SENCE -->
+            <div class="sello">
+                <div class="sello-title">CERTIFICADO<br>SENCE</div>
+                <div class="sello-code">{{curso_codigo_sence}}</div>
+            </div>
+            
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">J&C DIGITAL TRAINING</div>
+                <div class="subtitulo">Organismo Técnico de Capacitación</div>
+            </div>
+            
+            <!-- Título -->
+            <div class="titulo">DIPLOMA</div>
+            <div class="linea-decorativa"></div>
+            
+            <!-- Certificación -->
+            <div class="texto-certifica">Se certifica que</div>
+            
+            <!-- Estudiante -->
+            <div class="nombre-estudiante">{{estudiante_nombre_completo}}</div>
+            <div class="rut">RUT: {{estudiante_rut}}</div>
+            
+            <div class="texto-certifica">ha completado exitosamente el programa de capacitación</div>
+            
+            <!-- Curso -->
+            <div class="nombre-curso">{{curso_nombre}}</div>
+            
+            <!-- Detalles -->
+            <div class="detalles">
+                <strong>Duración:</strong> {{curso_duracion_texto}} <br>
+                <strong>Período:</strong> {{curso_fecha_inicio}} al {{curso_fecha_termino}} <br>
+                <strong>Nota Final:</strong> {{nota_final}} | <strong>Relator:</strong> {{relator_nombre}}
+            </div>
+            
+            <!-- Firmas -->
+            <div class="firmas">
+                <div class="firma">
+                    <div class="firma-placeholder">J&C</div>
+                    <div class="firma-linea"></div>
+                    <div class="firma-nombre">Director Académico</div>
+                    <div class="firma-cargo">J&C Digital Training</div>
+                </div>
+                
+                <div class="firma">
+                    <div class="firma-placeholder">✓</div>
+                    <div class="firma-linea"></div>
+                    <div class="firma-nombre">{{relator_nombre}}</div>
+                    <div class="firma-cargo">Relator del Curso</div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                Código de Validación: <span class="codigo">{{codigo_validacion}}</span> | Emisión: {{fecha_emision}}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

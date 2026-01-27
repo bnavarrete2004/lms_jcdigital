@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Diploma de Certificación</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Georgia, serif;
+            background: #064D91;
+            width: 297mm;
+            height: 210mm;
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+        
+        .diploma-container {
+            background: white;
+            width: 280mm;
+            height: 193mm;
+            margin: 8mm auto;
+            padding: 20mm;
+            border: 8px solid #064D91;
+            position: relative;
+        }
+        
+        .diploma-border {
+            border: 3px solid #52A9B7;
+            padding: 15mm;
+            height: 100%;
+            position: relative;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 10mm;
+        }
+        
+        .empresa-nombre {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #064D91;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        
+        .empresa-rut {
+            font-size: 12pt;
+            color: #666;
+        }
+        
+        .titulo-diploma {
+            text-align: center;
+            font-size: 42pt;
+            font-weight: bold;
+            color: #064D91;
+            letter-spacing: 4px;
+            margin-bottom: 8mm;
+            text-transform: uppercase;
+        }
+        
+        .certificacion-texto {
+            text-align: center;
+            font-size: 14pt;
+            color: #333;
+            margin-bottom: 6mm;
+        }
+        
+        .estudiante-nombre {
+            text-align: center;
+            font-size: 32pt;
+            font-weight: bold;
+            color: #064D91;
+            margin-bottom: 3mm;
+            border-bottom: 3px solid #52A9B7;
+            padding-bottom: 5mm;
+            display: block;
+        }
+        
+        .estudiante-rut {
+            text-align: center;
+            font-size: 12pt;
+            color: #666;
+            margin-bottom: 6mm;
+        }
+        
+        .curso-info {
+            text-align: center;
+            margin-bottom: 6mm;
+        }
+        
+        .curso-nombre {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3mm;
+        }
+        
+        .curso-detalles {
+            font-size: 12pt;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 20mm;
+            right: 20mm;
+            width: calc(100% - 40mm);
+        }
+        
+        .firmas-container {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        
+        .firma-section {
+            display: table-cell;
+            text-align: center;
+            width: 50%;
+            padding: 0 20px;
+        }
+        
+        .firma-linea {
+            border-top: 2px solid #333;
+            width: 180px;
+            margin: 0 auto 5px;
+        }
+        
+        .firma-nombre {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .firma-cargo {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        .validacion {
+            position: absolute;
+            bottom: 5mm;
+            left: 20mm;
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        .codigo-validacion {
+            font-weight: bold;
+            color: #064D91;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .sello-sence {
+            position: absolute;
+            top: 20mm;
+            right: 20mm;
+            text-align: center;
+            padding: 10px;
+            border: 3px solid #064D91;
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+        }
+        
+        .sello-texto {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #064D91;
+            line-height: 1.2;
+        }
+        
+        .codigo-sence {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #52A9B7;
+            margin-top: 5px;
+        }
+        
+        .decoracion {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            opacity: 0.15;
+        }
+        
+        .decoracion-tl {
+            top: 10mm;
+            left: 10mm;
+            border-top: 12px solid #52A9B7;
+            border-left: 12px solid #52A9B7;
+        }
+        
+        .decoracion-tr {
+            top: 10mm;
+            right: 10mm;
+            border-top: 12px solid #52A9B7;
+            border-right: 12px solid #52A9B7;
+        }
+        
+        .decoracion-bl {
+            bottom: 10mm;
+            left: 10mm;
+            border-bottom: 12px solid #52A9B7;
+            border-left: 12px solid #52A9B7;
+        }
+        
+        .decoracion-br {
+            bottom: 10mm;
+            right: 10mm;
+            border-bottom: 12px solid #52A9B7;
+            border-right: 12px solid #52A9B7;
+        }
+    </style>
+</head>
+<body>
+    <div class="diploma-container">
+        <div class="diploma-border">
+            <!-- Decoraciones -->
+            <div class="decoracion decoracion-tl"></div>
+            <div class="decoracion decoracion-tr"></div>
+            <div class="decoracion decoracion-bl"></div>
+            <div class="decoracion decoracion-br"></div>
+            
+            <!-- Sello SENCE -->
+            <div class="sello-sence">
+                <div class="sello-texto">CERTIFICADO<br>SENCE</div>
+                <div class="codigo-sence">{{curso_codigo_sence}}</div>
+            </div>
+            
+            <!-- Header -->
+            <div class="header">
+                <div class="empresa-nombre">{{empresa_nombre}}</div>
+                <div class="empresa-rut">RUT: {{empresa_rut}}</div>
+            </div>
+            
+            <!-- Título -->
+            <div class="titulo-diploma">DIPLOMA</div>
+            
+            <!-- Certificación -->
+            <div class="certificacion-texto">Certifica que</div>
+            
+            <!-- Estudiante -->
+            <div class="estudiante-nombre">{{estudiante_nombre_completo}}</div>
+            <div class="estudiante-rut">RUT: {{estudiante_rut}}</div>
+            
+            <!-- Curso -->
+            <div class="curso-info">
+                <div class="certificacion-texto">ha completado exitosamente el curso</div>
+                <div class="curso-nombre">{{curso_nombre}}</div>
+                <div class="curso-detalles">
+                    Duración: {{curso_duracion_texto}}<br>
+                    Período: {{curso_fecha_inicio}} al {{curso_fecha_termino}}<br>
+                    Nota Final: {{nota_final}}
+                </div>
+            </div>
+            
+            <!-- Footer con firmas -->
+            <div class="footer">
+                <div class="firmas-container">
+                    <div class="firma-section">
+                        <div class="firma-linea"></div>
+                        <div class="firma-nombre">Director Académico</div>
+                        <div class="firma-cargo">{{empresa_nombre}}</div>
+                    </div>
+                    
+                    <div class="firma-section">
+                        <div class="firma-linea"></div>
+                        <div class="firma-nombre">{{relator_nombre}}</div>
+                        <div class="firma-cargo">Relator del Curso</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Validación -->
+            <div class="validacion">
+                Código de Validación: <span class="codigo-validacion">{{codigo_validacion}}</span><br>
+                Fecha de Emisión: {{fecha_emision}}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,21 +1,27 @@
 # diplomas_utils.py
 # Utilidades para generación de diplomas PDF
-# LMS JC Digital Training
+# LMS JC Digital Training - CORREGIDO SEGÚN MODELOS REALES
 
 import uuid
 from datetime import datetime
 from io import BytesIO
 import cloudinary.uploader
-from weasyprint import HTML, CSS
+
 from django.template.loader import render_to_string
 from django.utils import timezone
 from api_lms.models import PlantillaDiploma, Inscripcion
-
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+from bs4 import BeautifulSoup
 
 def generar_codigo_validacion():
     """
     Genera un código único de validación para el diploma
-    Formato: DIP-XXXXXX (6 caracteres aleatorios)
+    Formato: DIP-XXXXXX (8 caracteres aleatorios)
     """
     codigo = f"DIP-{uuid.uuid4().hex[:8].upper()}"
     return codigo
@@ -52,14 +58,29 @@ def generar_variables_diploma(inscripcion, codigo_validacion):
     estudiante = inscripcion.estudiante
     curso = inscripcion.curso
     
-    # Calcular duración total del curso
-    duracion_horas = curso.duracion_horas
+    # Duración del curso
+    duracion_horas = curso.horas_totales
     
-    # Obtener relator principal
+    # Obtener relator principal (primer relator activo)
     relator_principal = None
-    curso_relator = curso.relatores.filter(principal=True).first()
+    curso_relator = curso.asignaciones_relator.filter(activo=True).first()
     if curso_relator:
         relator_principal = curso_relator.relator
+    
+    # Fechas del curso
+    # Usar fechas reales de la inscripción si existen, sino las del curso
+    fecha_inicio = inscripcion.fecha_inicio_real or curso.fecha_inicio
+    fecha_termino = inscripcion.fecha_fin_real or curso.fecha_fin
+    
+    # Formatear fechas (manejar None)
+    fecha_inicio_str = fecha_inicio.strftime('%d/%m/%Y') if fecha_inicio else 'N/A'
+    if hasattr(fecha_termino, 'strftime'):
+        fecha_termino_str = fecha_termino.strftime('%d/%m/%Y')
+    elif fecha_termino:
+        # Si es datetime
+        fecha_termino_str = fecha_termino.strftime('%d/%m/%Y')
+    else:
+        fecha_termino_str = 'N/A'
     
     variables = {
         # Datos del estudiante
@@ -70,19 +91,19 @@ def generar_variables_diploma(inscripcion, codigo_validacion):
         
         # Datos del curso
         'curso_nombre': curso.nombre,
-        'curso_codigo_sence': curso.codigo_sence.codigo if curso.codigo_sence else 'N/A',
+        'curso_codigo_sence': curso.codigo_sence.codigo if curso.codigo_sence else curso.codigo_sence_curso,
         'curso_duracion_horas': duracion_horas,
         'curso_duracion_texto': f"{duracion_horas} horas cronológicas",
-        'curso_fecha_inicio': inscripcion.fecha_inicio.strftime('%d/%m/%Y'),
-        'curso_fecha_termino': inscripcion.fecha_termino.strftime('%d/%m/%Y'),
+        'curso_fecha_inicio': fecha_inicio_str,
+        'curso_fecha_termino': fecha_termino_str,
         
         # Datos de calificación
         'nota_final': f"{inscripcion.nota_final:.1f}" if inscripcion.nota_final else 'N/A',
-        'porcentaje_progreso': f"{inscripcion.porcentaje_progreso:.1f}%",
+        'porcentaje_progreso': f"{inscripcion.porcentaje_avance:.1f}%",
         
         # Relator
         'relator_nombre': relator_principal.nombre_completo() if relator_principal else 'Equipo Docente',
-        'relator_titulo': relator_principal.perfil_relator.titulo_profesional if relator_principal and hasattr(relator_principal, 'perfil_relator') else '',
+        'relator_titulo': relator_principal.perfil_relator.especialidad if (relator_principal and hasattr(relator_principal, 'perfil_relator')) else '',
         
         # Validación y fechas
         'codigo_validacion': codigo_validacion,
@@ -117,35 +138,47 @@ def generar_html_diploma(plantilla, variables):
     
     return html_template
 
-
 def generar_pdf_diploma(html_content):
     """
-    Genera PDF desde HTML usando WeasyPrint
-    
-    Args:
-        html_content: str con HTML completo del diploma
-    
-    Returns:
-        BytesIO con el contenido del PDF
+    Genera PDF usando Playwright - soporta CSS moderno con gradientes
     """
-    # CSS adicional para el PDF
-    css_diploma = CSS(string='''
-        @page {
-            size: A4 landscape;
-            margin: 0;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-        }
-    ''')
+    from playwright.sync_api import sync_playwright
+    from io import BytesIO
+    import tempfile
+    import os
     
-    # Generar PDF
-    pdf_file = BytesIO()
-    HTML(string=html_content).write_pdf(pdf_file, stylesheets=[css_diploma])
-    pdf_file.seek(0)
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        pdf_path = tmp_file.name
     
-    return pdf_file
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.set_content(html_content, wait_until='networkidle')
+            page.wait_for_timeout(500)
+            page.pdf(
+                path=pdf_path,
+                format='A4',
+                landscape=True,
+                print_background=True,  # IMPORTANTE para gradientes
+                margin={'top': '0', 'right': '0', 'bottom': '0', 'left': '0'}
+            )
+            
+            browser.close()
+        
+        with open(pdf_path, 'rb') as f:
+            pdf_content = f.read()
+        
+        os.unlink(pdf_path)
+        
+        pdf_file = BytesIO(pdf_content)
+        pdf_file.seek(0)
+        return pdf_file
+        
+    except Exception as e:
+        if os.path.exists(pdf_path):
+            os.unlink(pdf_path)
+        raise Exception(f"Error con Playwright: {str(e)}")
 
 
 def subir_diploma_cloudinary(pdf_file, inscripcion, codigo_validacion):
@@ -160,6 +193,9 @@ def subir_diploma_cloudinary(pdf_file, inscripcion, codigo_validacion):
     Returns:
         dict con información del archivo subido (url, public_id)
     """
+    # IMPORTANTE: Asegurar que el buffer está al inicio
+    pdf_file.seek(0)
+    
     # Nombre del archivo
     estudiante_rut = inscripcion.estudiante.get_rut().replace('-', '')
     curso_id = inscripcion.curso.id
@@ -226,17 +262,48 @@ def generar_diploma_completo(inscripcion_id):
     # Generar HTML
     html_content = generar_html_diploma(plantilla, variables)
     
-    # Generar PDF
-    pdf_file = generar_pdf_diploma(html_content)
+    # Generar PDF con xhtml2pdf
+    try:
+        pdf_file = generar_pdf_diploma(html_content)
+    except Exception as e:
+        return {
+            'error': f'Error al generar PDF: {str(e)}',
+            'success': False
+        }
     
     # Subir a Cloudinary
-    upload_info = subir_diploma_cloudinary(pdf_file, inscripcion, codigo_validacion)
+    try:
+        upload_info = subir_diploma_cloudinary(pdf_file, inscripcion, codigo_validacion)
+    except Exception as e:
+        return {
+            'error': f'Error al subir a Cloudinary: {str(e)}',
+            'success': False
+        }
     
     # Actualizar inscripción con URL y código del diploma
     inscripcion.diploma_url = upload_info['url']
     inscripcion.diploma_codigo_validacion = codigo_validacion
-    inscripcion.save(update_fields=['diploma_url', 'diploma_codigo_validacion'])
+    inscripcion.diploma_generado = True
+    inscripcion.fecha_diploma = timezone.now()
+    inscripcion.save(update_fields=[
+        'diploma_url', 
+        'diploma_codigo_validacion', 
+        'diploma_generado',
+        'fecha_diploma'
+    ])
     
+    # Notificar al estudiante
+    notificar_diploma_listo(inscripcion, upload_info['url'], codigo_validacion)
+    
+    return {
+        'success': True,
+        'diploma_url': upload_info['url'],
+        'codigo_validacion': codigo_validacion,
+        'filename': upload_info['filename'],
+        'estudiante': inscripcion.estudiante.nombre_completo(),
+        'curso': inscripcion.curso.nombre
+    }
+
     # Notificar al estudiante
     notificar_diploma_listo(inscripcion, upload_info['url'], codigo_validacion)
     
@@ -263,12 +330,16 @@ def validar_codigo_diploma(codigo_validacion):
     try:
         inscripcion = Inscripcion.objects.get(diploma_codigo_validacion=codigo_validacion)
         
+        # Formatear fecha de término
+        fecha_termino = inscripcion.fecha_fin_real or inscripcion.curso.fecha_fin
+        fecha_termino_str = fecha_termino.strftime('%d/%m/%Y') if fecha_termino else 'N/A'
+        
         return {
             'valido': True,
             'estudiante': inscripcion.estudiante.nombre_completo(),
             'rut': inscripcion.estudiante.get_rut(),
             'curso': inscripcion.curso.nombre,
-            'fecha_termino': inscripcion.fecha_termino.strftime('%d/%m/%Y'),
+            'fecha_termino': fecha_termino_str,
             'nota_final': inscripcion.nota_final,
             'diploma_url': inscripcion.diploma_url
         }
