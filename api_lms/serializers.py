@@ -170,19 +170,19 @@ class CursoSerializer(serializers.ModelSerializer):
 # =====================================================
 
 class MaterialSerializer(serializers.ModelSerializer):
-    subido_por_nombre = serializers.SerializerMethodField()
-    relator_autor_nombre = serializers.SerializerMethodField()
+    #subido_por_nombre = serializers.SerializerMethodField()
+    #relator_autor_nombre = serializers.SerializerMethodField()
     
     class Meta:
         model = Material
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'total_usos']
     
-    def get_subido_por_nombre(self, obj):
-        return obj.subido_por.nombre_completo() if obj.subido_por else None
+    #def get_subido_por_nombre(self, obj):
+        #return obj.subido_por.nombre_completo() if obj.subido_por else None
     
-    def get_relator_autor_nombre(self, obj):
-        return obj.relator_autor.nombre_completo() if obj.relator_autor else None
+    #def get_relator_autor_nombre(self, obj):
+        #return obj.relator_autor.nombre_completo() if obj.relator_autor else None
 
 
 class LeccionMaterialSerializer(serializers.ModelSerializer):

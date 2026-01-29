@@ -49,24 +49,12 @@ def validar_archivo(file, tipo_material=None):
 def upload_material(request):
     """
     POST /api/upload/material/
-    
     Sube un archivo de material educativo a Cloudinary
-    
-    Body (multipart/form-data):
-    - file: archivo a subir
-    - nombre: nombre del material
-    - descripcion: descripción (opcional)
-    - tipo: tipo de material (pdf, video, documento, presentacion, imagen, scorm)
-    - tags: tags separados por comas (opcional)
-    - categoria: categoría (opcional)
     """
     
-    # Verificar permisos
+    # Verificar perfil
     if not hasattr(request.user, 'perfil'):
-        return Response(
-            {'error': 'Usuario sin perfil'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Usuario sin perfil'}, status=status.HTTP_400_BAD_REQUEST)
     
     usuario = request.user.perfil
     
@@ -79,22 +67,13 @@ def upload_material(request):
     
     # Validar datos requeridos
     if 'file' not in request.FILES:
-        return Response(
-            {'error': 'No se ha enviado ningún archivo'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'No se ha enviado ningún archivo'}, status=status.HTTP_400_BAD_REQUEST)
     
     if 'tipo' not in request.data:
-        return Response(
-            {'error': 'Debe especificar el tipo de material'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Debe especificar el tipo de material'}, status=status.HTTP_400_BAD_REQUEST)
     
     if 'nombre' not in request.data:
-        return Response(
-            {'error': 'Debe especificar el nombre del material'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Debe especificar el nombre del material'}, status=status.HTTP_400_BAD_REQUEST)
     
     file = request.FILES['file']
     tipo = request.data['tipo']
@@ -108,11 +87,6 @@ def upload_material(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Validar archivo
-    es_valido, error = validar_archivo(file, tipo)
-    if not es_valido:
-        return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
         # Obtener configuración del tipo
         config = settings.CLOUDINARY_SETTINGS['materiales'][tipo]
@@ -121,65 +95,60 @@ def upload_material(request):
         upload_result = cloudinary.uploader.upload(
             file,
             folder=config['folder'],
-            resource_type='auto',  # Detecta automáticamente si es imagen, video o raw
+            resource_type='auto',
             use_filename=True,
             unique_filename=True,
         )
         
-        # Crear registro en BD
-        material_data = {
-            'nombre': nombre,
-            'descripcion': request.data.get('descripcion', ''),
-            'tipo': tipo,
-            'archivo_url': upload_result['secure_url'],
-            'archivo_size': file.size,
-            'subido_por': usuario.id,
-            'relator_autor': usuario.id if usuario.tipo_usuario == 'relator' else None,
-            'estado': 'pendiente' if usuario.tipo_usuario == 'relator' else 'aprobado',
-        }
-        
-        # Agregar campos opcionales
-        if 'tags' in request.data:
-            tags_str = request.data['tags']
-            material_data['tags'] = [tag.strip() for tag in tags_str.split(',') if tag.strip()]
-        
-        if 'categoria' in request.data:
-            material_data['categoria'] = request.data['categoria']
+        # Crear material directamente con objects.create
+        material = Material.objects.create(
+            nombre=nombre,
+            descripcion=request.data.get('descripcion', ''),
+            tipo=tipo,
+            archivo_url=upload_result['secure_url'],
+            archivo_size=file.size,
+            subido_por=usuario,
+            relator_autor=usuario if usuario.tipo_usuario == 'relator' else None,
+            estado='pendiente' if usuario.tipo_usuario == 'relator' else 'aprobado',
+            categoria=request.data.get('categoria', ''),
+            tags=[tag.strip() for tag in request.data.get('tags', '').split(',') if tag.strip()]
+        )
         
         # Metadata adicional según tipo
         if tipo == 'video' and 'duration' in upload_result:
-            material_data['duracion_segundos'] = int(upload_result['duration'])
+            material.duracion_segundos = int(upload_result['duration'])
+            material.save()
         
         if tipo == 'pdf' and 'pages' in upload_result:
-            material_data['total_paginas'] = upload_result['pages']
+            material.total_paginas = upload_result['pages']
+            material.save()
         
-        # Crear material
-        serializer = MaterialSerializer(data=material_data)
-        if serializer.is_valid():
-            material = serializer.save()
-            
-            return Response({
-                'success': True,
-                'message': 'Material subido exitosamente',
-                'material': MaterialSerializer(material).data,
-                'cloudinary': {
-                    'public_id': upload_result['public_id'],
-                    'url': upload_result['secure_url'],
-                    'format': upload_result['format'],
-                    'size': upload_result['bytes'],
-                }
-            }, status=status.HTTP_201_CREATED)
-        else:
-            # Si falla la creación del material, eliminar archivo de Cloudinary
-            cloudinary.uploader.destroy(upload_result['public_id'])
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'success': True,
+            'message': 'Material subido exitosamente',
+            'material': {
+                'id': material.id,
+                'nombre': material.nombre,
+                'tipo': material.tipo,
+                'estado': material.estado,
+                'archivo_url': material.archivo_url,
+                'subido_por': material.subido_por.nombre_completo() if material.subido_por else None
+            },
+            'cloudinary': {
+                'public_id': upload_result['public_id'],
+                'url': upload_result['secure_url'],
+                'format': upload_result['format'],
+                'size': upload_result['bytes'],
+            }
+        }, status=status.HTTP_201_CREATED)
     
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response(
             {'error': f'Error al subir archivo: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -295,13 +264,18 @@ def delete_avatar(request):
         # Limpiar URL en BD
         usuario.avatar_url = ''
         usuario.save()
-        
+
         return Response({
             'success': True,
             'message': 'Avatar eliminado exitosamente'
         }, status=status.HTTP_200_OK)
-    
+        
     except Exception as e:
+        import traceback
+        print("=" * 80)
+        print("ERROR COMPLETO:")
+        traceback.print_exc()
+        print("=" * 80)
         return Response(
             {'error': f'Error al eliminar avatar: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -52,13 +52,13 @@ def notificar_material_subido(material, usuario_creador):
     titulo = f"Nuevo material pendiente de aprobación"
     mensaje = (
         f"{usuario_creador.nombre_completo()} ha subido un nuevo material "
-        f"'{material.titulo}' de tipo {material.get_tipo_display()}."
+        f"'{material.nombre}' de tipo {material.get_tipo_display()}."  # ← CAMBIÉ titulo por nombre
     )
     
     for admin in admins:
         crear_notificacion(
             usuario=admin,
-            tipo='general',  # Podríamos agregar 'material_pendiente' al modelo
+            tipo='general',
             titulo=titulo,
             mensaje=mensaje,
             url_accion=f"/admin/materiales/{material.id}",
@@ -72,18 +72,19 @@ def notificar_material_aprobado(material, aprobado_por):
     """
     titulo = "Material aprobado ✓"
     mensaje = (
-        f"Tu material '{material.titulo}' ha sido aprobado por "
+        f"Tu material '{material.nombre}' ha sido aprobado por "  # ← CAMBIÉ titulo por nombre
         f"{aprobado_por.nombre_completo()} y ya está disponible para usar en lecciones."
     )
     
     crear_notificacion(
-        usuario=material.creado_por,
+        usuario=material.relator_autor,  # ← CAMBIÉ creado_por por relator_autor
         tipo='material_aprobado',
         titulo=titulo,
         mensaje=mensaje,
         url_accion=f"/materiales/{material.id}",
         prioridad='normal'
     )
+    
 
 
 def notificar_material_rechazado(material, rechazado_por, motivo_rechazo):
@@ -92,13 +93,13 @@ def notificar_material_rechazado(material, rechazado_por, motivo_rechazo):
     """
     titulo = "Material rechazado"
     mensaje = (
-        f"Tu material '{material.titulo}' ha sido rechazado por "
+        f"Tu material '{material.nombre}' ha sido rechazado por "  # ← CAMBIÉ titulo por nombre
         f"{rechazado_por.nombre_completo()}.\n\n"
         f"Motivo: {motivo_rechazo}"
     )
     
     crear_notificacion(
-        usuario=material.creado_por,
+        usuario=material.relator_autor,  # ← CAMBIÉ creado_por por relator_autor
         tipo='material_rechazado',
         titulo=titulo,
         mensaje=mensaje,
@@ -248,3 +249,99 @@ def marcar_todas_leidas(usuario):
         notif.marcar_como_leida()
     
     return notificaciones_pendientes.count()
+
+def notificar_evaluacion_completada(intento):
+    """
+    Notifica al estudiante cuando completa una evaluación
+    """
+    aprobado = intento.aprobado if intento.aprobado is not None else False
+    estado_texto = "aprobada ✓" if aprobado else "completada"
+    
+    titulo = f"Evaluación {estado_texto}"
+    
+    # Construir mensaje según si tiene nota o no
+    if intento.nota_obtenida:
+        mensaje = (
+            f"Has completado la evaluación '{intento.evaluacion.nombre}'.\n"
+            f"Nota obtenida: {intento.nota_obtenida}"
+        )
+    else:
+        mensaje = (
+            f"Has completado la evaluación '{intento.evaluacion.nombre}'.\n"
+            f"Tu evaluación está pendiente de corrección."
+        )
+    
+    crear_notificacion(
+        usuario=intento.estudiante,
+        tipo='evaluacion_validada',
+        titulo=titulo,
+        mensaje=mensaje,
+        url_accion=f"/evaluaciones/intentos/{intento.id}",
+        prioridad='normal'
+    )
+
+        # 2. Notificar a los relatores del curso
+    from api_lms.models import CursoRelator
+    
+    curso = intento.evaluacion.curso
+    if curso:
+        # Obtener relatores asignados al curso
+        relatores = CursoRelator.objects.filter(curso=curso, activo=True)
+        
+        titulo_relator = f"Estudiante completó evaluación"
+        mensaje_relator = (
+            f"{intento.estudiante.nombre_completo()} ha completado la evaluación "
+            f"'{intento.evaluacion.nombre}' en el curso '{curso.nombre}'.\n"
+            f"Nota: {intento.nota_obtenida if intento.nota_obtenida else 'Pendiente'}"
+        )
+        
+        for asignacion in relatores:
+            crear_notificacion(
+                usuario=asignacion.relator,
+                tipo='general',
+                titulo=titulo_relator,
+                mensaje=mensaje_relator,
+                url_accion=f"/evaluaciones/intentos/{intento.id}",
+                prioridad='normal'
+            )
+
+
+def notificar_curso_completado(inscripcion):
+    """
+    Notifica al estudiante cuando completa/aprueba un curso
+    """
+    if inscripcion.estado == 'aprobado':
+        titulo = "¡Curso aprobado! 🎉"
+        if inscripcion.nota_final:
+            mensaje = (
+                f"¡Felicitaciones! Has aprobado el curso '{inscripcion.curso.nombre}' "
+                f"con nota {inscripcion.nota_final}.\n\n"
+                f"Tu diploma estará disponible pronto."
+            )
+        else:
+            mensaje = (
+                f"¡Felicitaciones! Has aprobado el curso '{inscripcion.curso.nombre}'.\n\n"
+                f"Tu diploma estará disponible pronto."
+            )
+        prioridad = 'alta'
+    elif inscripcion.estado == 'completado':
+        titulo = "Curso completado"
+        if inscripcion.nota_final:
+            mensaje = (
+                f"Has completado el curso '{inscripcion.curso.nombre}'. "
+                f"Nota final: {inscripcion.nota_final}"
+            )
+        else:
+            mensaje = f"Has completado el curso '{inscripcion.curso.nombre}'."
+        prioridad = 'normal'
+    else:
+        return  # No notificar otros estados
+    
+    crear_notificacion(
+        usuario=inscripcion.estudiante,
+        tipo='general',
+        titulo=titulo,
+        mensaje=mensaje,
+        url_accion=f"/cursos/{inscripcion.curso.id}",
+        prioridad=prioridad
+    )
