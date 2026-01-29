@@ -604,6 +604,7 @@ class Inscripcion(models.Model):
         ('inscrito', 'Inscrito'),
         ('en_curso', 'En Curso'),
         ('completado', 'Completado'),
+        ('pendiente_revision', 'Pendiente de Revisión'),  # ← Solo debe aparecer UNA vez
         ('aprobado', 'Aprobado'),
         ('reprobado', 'Reprobado'),
         ('retirado', 'Retirado'),
@@ -627,8 +628,26 @@ class Inscripcion(models.Model):
         decimal_places=2, 
         null=True, 
         blank=True,
-        validators=[MinValueValidator(1.0), MaxValueValidator(7.0)]
+        validators=[MinValueValidator(1.0), MaxValueValidator(7.0)],
+        help_text="Nota final oficial del curso (asignada por admin)"
     )
+
+    # ========== NUEVOS CAMPOS - SISTEMA DE CALIFICACIÓN AUTOMÁTICA ==========
+    nota_final_calculada = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1.0), MaxValueValidator(7.0)],
+        help_text="Nota calculada automáticamente por el sistema (promedio ponderado)"
+    )
+    
+    cumple_requisitos_aprobacion = models.BooleanField(
+        default=False,
+        help_text="True si cumple: nota >= 4.0 Y asistencia >= 75%"
+    )
+    # ========================================================================
+
     porcentaje_avance = models.IntegerField(
         default=0,
         validators=[MinValueValidator(0), MaxValueValidator(100)]
@@ -640,6 +659,33 @@ class Inscripcion(models.Model):
     
     # Tiempo total de estudio (en minutos)
     tiempo_total_minutos = models.IntegerField(default=0)
+
+    # ========== NUEVOS CAMPOS - APROBACIÓN MANUAL ==========
+    aprobacion_manual = models.BooleanField(
+        default=False,
+        help_text="True si el admin aprobó/reprobó manualmente (decisión excepcional)"
+    )
+    
+    justificacion_aprobacion = models.TextField(
+        blank=True,
+        help_text="Justificación del admin para aprobar/reprobar (obligatoria en decisiones excepcionales)"
+    )
+    
+    revisado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inscripciones_revisadas',
+        help_text="Administrador que revisó y aprobó/reprobó la inscripción"
+    )
+    
+    fecha_revision = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Fecha en que el admin revisó la inscripción"
+    )
+    # ========================================================
     
     # Encuesta de satisfacción
     encuesta_completada = models.BooleanField(default=False)
@@ -651,6 +697,14 @@ class Inscripcion(models.Model):
     diploma_codigo_validacion = models.CharField(max_length=20, blank=True)
     fecha_diploma = models.DateTimeField(null=True, blank=True)
     
+    # ← ❌ BORRAR ESTAS LÍNEAS (duplicados sin help_text)
+    # nota_final_calculada = models.DecimalField(...)
+    # cumple_requisitos_aprobacion = models.BooleanField(...)
+    # aprobacion_manual = models.BooleanField(...)
+    # justificacion_aprobacion = models.TextField(...)
+    # revisado_por = models.ForeignKey(...)
+    # fecha_revision = models.DateTimeField(...)
+        
     # Metadata
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -663,6 +717,8 @@ class Inscripcion(models.Model):
             models.Index(fields=['estado']),
             models.Index(fields=['fecha_inscripcion']),
             models.Index(fields=['diploma_codigo_validacion']),
+            models.Index(fields=['cumple_requisitos_aprobacion']),  # ← AGREGAR
+            models.Index(fields=['revisado_por']),  # ← AGREGAR
         ]
         verbose_name = 'Inscripción'
         verbose_name_plural = 'Inscripciones'
@@ -678,7 +734,6 @@ class Inscripcion(models.Model):
             self.encuesta_completada and 
             not self.diploma_generado
         )
-
 
 class ProgresoModulo(models.Model):
     """Progreso de estudiantes por módulo"""
@@ -848,14 +903,34 @@ class Evaluacion(models.Model):
         default=2,
         validators=[MinValueValidator(1)]
     )
+    
+    # Sistema de notas chileno
     nota_aprobacion = models.DecimalField(max_digits=3, decimal_places=2, default=4.00)
+    porcentaje_aprobacion = models.IntegerField(
+        default=60,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text="Porcentaje de exigencia para aprobar (típicamente 60%)"
+    )
+    nota_minima = models.DecimalField(
+        max_digits=3, 
+        decimal_places=1, 
+        default=1.0,
+        help_text="Nota mínima de la escala (típicamente 1.0)"
+    )
+    nota_maxima = models.DecimalField(
+        max_digits=3, 
+        decimal_places=1, 
+        default=7.0,
+        help_text="Nota máxima de la escala (típicamente 7.0)"
+    )
     
     # Peso en nota final
     peso_porcentaje = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 
         default=0.00,
-        validators=[MinValueValidator(0), MaxValueValidator(100)]
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Peso de esta evaluación en la nota final del curso (%)"
     )
     
     # Requisitos
@@ -895,6 +970,13 @@ class Evaluacion(models.Model):
         from django.core.exceptions import ValidationError
         if not (self.curso or self.modulo) or (self.curso and self.modulo):
             raise ValidationError('La evaluación debe estar asociada a un curso O a un módulo, no a ambos.')
+    
+    @property
+    def puntaje_maximo(self):
+        """Calcula el puntaje máximo sumando todas las preguntas"""
+        return self.preguntas.aggregate(
+            total=models.Sum('puntaje')
+        )['total'] or 0
 
 
 class Pregunta(models.Model):
