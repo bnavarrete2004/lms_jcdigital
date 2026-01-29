@@ -24,6 +24,7 @@ from .views import (
     AuditLogViewSet
 )
 
+
 # Importar views de upload
 from .views_upload import upload_material, upload_avatar, delete_avatar
 

@@ -23,6 +23,19 @@ from api_lms.serializers import UsuarioSerializer
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Serializer personalizado que incluye datos del usuario en la respuesta"""
     
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        
+        # Agregar información personalizada al token JWT
+        if hasattr(user, 'perfil'):
+            perfil = user.perfil
+            token['rol'] = perfil.tipo_usuario  # ← AGREGAR ESTO
+            token['usuario_id'] = perfil.id
+            token['nombre_completo'] = perfil.nombre_completo()
+        
+        return token
+    
     def validate(self, attrs):
         data = super().validate(attrs)
         
@@ -36,6 +49,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'email': self.user.email,
                 'nombre_completo': perfil.nombre_completo(),
                 'tipo_usuario': perfil.tipo_usuario,
+                'rol': perfil.tipo_usuario,  # ← AGREGAR ESTO
                 'rut': perfil.get_rut(),
                 'avatar_url': perfil.avatar_url,
             }
@@ -45,6 +59,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'username': self.user.username,
                 'email': self.user.email,
                 'tipo_usuario': 'sin_perfil',
+                'rol': None,  # ← AGREGAR ESTO
             }
         
         return data

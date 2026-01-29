@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'api_lms',
 ]
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
