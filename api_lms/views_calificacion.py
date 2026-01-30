@@ -357,11 +357,16 @@ def detalle_calificaciones_inscripcion(request, inscripcion_id):
     # Obtener inscripción
     inscripcion = get_object_or_404(Inscripcion, id=inscripcion_id)
     
+    
     # Verificar permisos: el estudiante solo ve sus propias calificaciones
     rol_usuario = obtener_rol_usuario(request.user)
-    
     # Obtener el usuario correcto (puede ser Usuario directo o relacionado)
-    usuario_actual = request.user if hasattr(request.user, 'rol') else request.user.usuario
+    if hasattr(request.user, 'perfil'):
+        usuario_actual = request.user.perfil
+    elif hasattr(request.user, 'tipo_usuario'):
+        usuario_actual = request.user
+    else:
+        usuario_actual = request.user
     
     if rol_usuario == 'estudiante' and inscripcion.estudiante != usuario_actual:
         return Response(
@@ -422,8 +427,8 @@ def detalle_calificaciones_inscripcion(request, inscripcion_id):
         'inscripcion_id': inscripcion.id,
         'estudiante': {
             'id': inscripcion.estudiante.id,
-            'nombre': inscripcion.estudiante.nombre_completo(),
-            'rut': inscripcion.estudiante.rut
+            'nombre': f"{inscripcion.estudiante.nombres} {inscripcion.estudiante.apellido_paterno} {inscripcion.estudiante.apellido_materno}",
+            'rut': f"{inscripcion.estudiante.rut_numero}-{inscripcion.estudiante.rut_dv}"
         },
         'curso': {
             'id': inscripcion.curso.id,
